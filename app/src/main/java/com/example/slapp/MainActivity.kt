@@ -16,11 +16,22 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+//import androidx.compose.foundation.layout.BoxScopeInstance.align
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.getValue
+//import androidx.compose.runtime.mutableStateOf
+//import androidx.compose.runtime.remember
+//import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -43,12 +54,32 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GestureScreen()
+                   MainScreen()
                 }
             }
         }
     }
 }
+
+@Composable
+fun MainScreen(){
+    val viewModel: StateViewModel = viewModel()
+//    var bufferActive = viewModel.bufferActive
+    Box(modifier = Modifier.fillMaxSize()){
+        GestureScreen()
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceAround){
+            Button(onClick = { /*TODO*/ }) { Text(text = "Set Combination") }
+            Button(onClick = {
+                viewModel.bufferActive=!viewModel.bufferActive
+                Log.i("Buffer", "Buffer is now $viewModel.bufferActive")
+            }) { Text(text = "Test Combination") }
+        }
+    }
+}
+
 
 @Composable
 fun GestureScreen() {
@@ -66,9 +97,10 @@ fun GestureScreen() {
     val centerY = screenHeight / 2
     var region = 0
     // combo related variables
-    val viewModel: ComboViewModel = viewModel()
+    val viewModel: StateViewModel = viewModel()
     val combination = viewModel.combination
-    val inputBuffer = FILOBuffer(20)
+    val inputBuffer = viewModel.inputBuffer
+    var bufferActive = viewModel.bufferActive
 
     combination.add(1)
     combination.add(3)
@@ -84,8 +116,13 @@ fun GestureScreen() {
                         // Handle tap gesture here
                         region = calculateRegion(offset.x, offset.y, centerX, centerY)
                         println("Tapped at: $offset")
-                        Log.i("Tap", "Tapped at: $offset in region $region. Center: ($centerX, $centerY), width: $screenWidth, height: $screenHeight")
-                        inputBuffer.push(region)
+                        if (bufferActive) {
+                            inputBuffer.push(region)
+                        }
+                        Log.i(
+                            "Tap",
+                            "Tapped at: $offset in region $region. Buffer is $bufferActive active and contains ${inputBuffer.peek()}"
+                        )
 
                     },
                     onDoubleTap = { offset ->
@@ -124,6 +161,14 @@ fun CenterHexImage() {
 fun GestureScreenPreview() {
     SLAPPTheme { // Apply your app's theme
         GestureScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    SLAPPTheme { // Apply your app's theme
+        MainScreen()
     }
 }
 

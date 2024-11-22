@@ -22,6 +22,7 @@ class UnlockTests{
         assertTrue(tryUnlock(inputBuffer, combination))
     }
 
+    @Test
     fun testUnlockSmallerBuffer(){
         val inputBuffer = FILOBuffer(3)
         inputBuffer.push(2)
@@ -30,6 +31,7 @@ class UnlockTests{
         assertFalse(tryUnlock(inputBuffer, combination))
     }
 
+    @Test
     fun testUnlockLargerBuffer(){
         val inputBuffer = FILOBuffer(5)
         inputBuffer.push(1)

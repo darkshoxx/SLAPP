@@ -6,6 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-class ComboViewModel : ViewModel() {
+class StateViewModel : ViewModel() {
     var combination by mutableStateOf(mutableStateListOf<Int>())
+    var inputBuffer by mutableStateOf(FILOBuffer(20))
+    var bufferActive by mutableStateOf(false)
 }
+
