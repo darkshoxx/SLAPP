@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.slapp
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -31,13 +31,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.slapp.ui.theme.SLAPPTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyApplicationTheme {
+            SLAPPTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -72,7 +72,7 @@ fun GestureScreen() {
                 detectTapGestures(
                     onTap = { offset ->
                         // Handle tap gesture here
-                        region = calculateRegion(offset.x, offset.y, centerX.toFloat(), centerY.toFloat())
+                        region = calculateRegion(offset.x, offset.y, centerX, centerY)
                         println("Tapped at: $offset")
                         Log.i("Tap", "Tapped at: $offset in region $region. Center: ($centerX, $centerY), width: $screenWidth, height: $screenHeight")
                     },
@@ -110,7 +110,7 @@ fun CenterHexImage() {
 @Preview(showBackground = true)
 @Composable
 fun GestureScreenPreview() {
-    MyApplicationTheme { // Apply your app's theme
+    SLAPPTheme { // Apply your app's theme
         GestureScreen()
     }
 }

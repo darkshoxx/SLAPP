@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.slapp
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke

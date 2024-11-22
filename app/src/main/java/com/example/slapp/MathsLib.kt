@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.slapp
 
 import kotlin.math.atan2
 

@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.slapp
 
 /**
  * A sealed hierarchy describing the state of the text generation.
