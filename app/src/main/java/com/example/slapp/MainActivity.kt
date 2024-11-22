@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import com.example.slapp.ui.theme.SLAPPTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,9 +52,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun GestureScreen() {
+    // config variables
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
-
+    // size and position variables
     val screenWidth = with(density) {
          configuration.screenWidthDp.dp.toPx()
     }
@@ -63,6 +65,14 @@ fun GestureScreen() {
     val centerX = screenWidth / 2
     val centerY = screenHeight / 2
     var region = 0
+    // combo related variables
+    val viewModel: ComboViewModel = viewModel()
+    val combination = viewModel.combination
+    val inputBuffer = FILOBuffer(20)
+
+    combination.add(1)
+    combination.add(3)
+    combination.add(5)
 
     Surface(
         color = colorResource(R.color.gray),
@@ -75,6 +85,8 @@ fun GestureScreen() {
                         region = calculateRegion(offset.x, offset.y, centerX, centerY)
                         println("Tapped at: $offset")
                         Log.i("Tap", "Tapped at: $offset in region $region. Center: ($centerX, $centerY), width: $screenWidth, height: $screenHeight")
+                        inputBuffer.push(region)
+
                     },
                     onDoubleTap = { offset ->
                         // Handle double tap gesture here

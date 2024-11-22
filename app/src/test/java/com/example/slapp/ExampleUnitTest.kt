@@ -10,7 +10,78 @@ import org.junit.Assert.*
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 
-class MathsLibTest{
+class UnlockTests{
+
+    @Test
+    fun testUnlockSameSize(){
+        val inputBuffer = FILOBuffer(3)
+        inputBuffer.push(1)
+        inputBuffer.push(2)
+        inputBuffer.push(3)
+        val combination = listOf(3, 2, 1)
+        assertTrue(tryUnlock(inputBuffer, combination))
+    }
+
+    fun testUnlockSmallerBuffer(){
+        val inputBuffer = FILOBuffer(3)
+        inputBuffer.push(2)
+        inputBuffer.push(3)
+        val combination = listOf(3, 2, 1)
+        assertFalse(tryUnlock(inputBuffer, combination))
+    }
+
+    fun testUnlockLargerBuffer(){
+        val inputBuffer = FILOBuffer(5)
+        inputBuffer.push(1)
+        inputBuffer.push(2)
+        inputBuffer.push(3)
+        inputBuffer.push(4)
+        inputBuffer.push(5)
+        val combination = listOf(5, 4, 3)
+        assertTrue(tryUnlock(inputBuffer, combination))
+
+
+    }
+}
+
+class FILOTests{
+
+    @Test
+    fun testBuffering(){
+        val buffer = FILOBuffer(3)
+        buffer.push(1)
+        buffer.push(2)
+        buffer.push(3)
+        buffer.push(4)
+        assertEquals(4, buffer.pop())
+        assertEquals(3, buffer.pop())
+        assertEquals(2, buffer.pop())
+        assertNull(buffer.pop())
+    }
+
+    @Test
+    fun testBasics() {
+        val buffer = FILOBuffer(3)
+        assertFalse(buffer.isFull())
+        assertTrue(buffer.isEmpty())
+        buffer.push(1)
+        buffer.push(2)
+        buffer.push(3)
+        assertTrue(buffer.isFull())
+        assertFalse(buffer.isEmpty())
+        assertEquals(3, buffer.pop())
+        assertEquals(2, buffer.peek())
+        assertEquals(2, buffer.pop())
+        assertEquals(1, buffer.peek())
+        assertEquals(1, buffer.pop())
+        assertNull(buffer.pop())
+        assertFalse(buffer.isFull())
+        assertTrue(buffer.isEmpty())
+        assertNull(buffer.peek())
+    }
+}
+
+class SegmentTests{
 
     @Test
     fun testAbsoluteAngleSegments(){
