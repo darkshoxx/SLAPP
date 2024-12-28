@@ -18,7 +18,7 @@ class UnlockTests{
         inputBuffer.push(1)
         inputBuffer.push(2)
         inputBuffer.push(3)
-        val combination = listOf(3, 2, 1)
+        val combination = listOf(1, 2, 3)
         assertTrue(tryUnlock(inputBuffer, combination))
     }
 
@@ -39,7 +39,7 @@ class UnlockTests{
         inputBuffer.push(3)
         inputBuffer.push(4)
         inputBuffer.push(5)
-        val combination = listOf(5, 4, 3)
+        val combination = listOf(3, 4, 5)
         assertTrue(tryUnlock(inputBuffer, combination))
 
 

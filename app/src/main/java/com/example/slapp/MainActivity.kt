@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -24,10 +25,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.mutableStateOf
 //import androidx.compose.runtime.remember
@@ -44,6 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
 import com.example.slapp.ui.theme.SLAPPTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,21 +69,39 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+
 @Composable
 fun MainScreen(){
     val viewModel: StateViewModel = viewModel()
-//    var bufferActive = viewModel.bufferActive
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround){
-            Button(onClick = { /*TODO*/ }) { Text(text = "Set Combination") }
             Button(onClick = {
-                viewModel.bufferActive=!viewModel.bufferActive
-                Log.i("Buffer", "Buffer is now $viewModel.bufferActive")
-            }) { Text(text = "Test Combination") }
+                if (!viewModel.settingCombination.value) {
+                    viewModel.clearCombination()
+                }
+                viewModel.toggleSettingCombination()
+                val logsetting = viewModel.settingCombination.value
+                Log.i("Setting", "Setting is now $logsetting")
+            },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (viewModel.settingCombination.value) Color.Red else Color.Blue
+                )
+            ) { Text(text = if (viewModel.settingCombination.value) "SETTING" else "Set Combination") }
+            Button(onClick = {
+                viewModel.clearBuffer()
+                viewModel.toggleBufferActive()
+                val logbuffer = viewModel.bufferActive
+                Log.i("Buffer", "Buffer is now $logbuffer")
+            },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
+                )
+                ) { Text(text = if (viewModel.bufferActive) "TESTING" else "Test Combination") }
         }
     }
 }
@@ -98,13 +124,14 @@ fun GestureScreen() {
     var region = 0
     // combo related variables
     val viewModel: StateViewModel = viewModel()
-    val combination = viewModel.combination
-    val inputBuffer = viewModel.inputBuffer
-    var bufferActive = viewModel.bufferActive
 
-    combination.add(1)
-    combination.add(3)
-    combination.add(5)
+    val context = LocalContext.current
+
+
+    viewModel.addToCombination(1)
+    viewModel.addToCombination(2)
+    viewModel.addToCombination(3)
+    viewModel.addToCombination(4)
 
     Surface(
         color = colorResource(R.color.gray),
@@ -116,13 +143,28 @@ fun GestureScreen() {
                         // Handle tap gesture here
                         region = calculateRegion(offset.x, offset.y, centerX, centerY)
                         println("Tapped at: $offset")
-                        if (bufferActive) {
-                            inputBuffer.push(region)
+                        if (viewModel.bufferActive) {
+                            viewModel.pushToBuffer(region)
                         }
                         Log.i(
                             "Tap",
-                            "Tapped at: $offset in region $region. Buffer is $bufferActive active and contains ${inputBuffer.peek()}"
+                            "Tap in reg $region. Bufferbool is ${viewModel.bufferActive}, and contains ${viewModel.queue()}, combo is ${viewModel.combination.toList()}"
                         )
+                        if (!viewModel.settingCombination.value) {
+                            // Only attempt unlocking when NOT setting combination
+                            val success: Boolean = viewModel.tryUnlock()
+                            if (success) {
+                                Log.i("Success", "Successful unlock!")
+                                viewModel.clearBuffer()
+                                // Make a toast pup up that says "unlocked"
+                                Toast.makeText(context, "Unlocked!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Log.i("Failure", "Still Locked!")
+                            }
+                        } else {
+                            // setting combination, adding to combination
+                            viewModel.addToCombination(region)
+                        }
 
                     },
                     onDoubleTap = { offset ->

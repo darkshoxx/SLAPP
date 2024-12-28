@@ -44,6 +44,7 @@ android {
 dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")
+    implementation("androidx.compose.runtime:runtime-livedata:1.3.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core-ktx:1.9.0")
     implementation(libs.androidx.core.ktx)

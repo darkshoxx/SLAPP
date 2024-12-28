@@ -1,5 +1,6 @@
 package com.example.slapp
 
+import androidx.compose.runtime.rememberUpdatedState
 import kotlin.math.atan2
 import kotlin.collections.ArrayDeque
 
@@ -21,6 +22,10 @@ class FILOBuffer(private val maxSize: Int) {
         buffer.addLast(value)
     }
 
+    fun queue():List<Int> {
+        return buffer.toList()
+    }
+
     fun pop(): Int? {
         return if (buffer.isNotEmpty()) buffer.removeLast() else null
     }
@@ -36,11 +41,19 @@ class FILOBuffer(private val maxSize: Int) {
     fun isFull(): Boolean {
         return buffer.size == maxSize
     }
+
+    fun clear() {
+        buffer.clear()
+    }
 }
 
 fun tryUnlock(inputBuffer: FILOBuffer, combination: List<Int>): Boolean {
-    for (i in combination.iterator()){
-        if (inputBuffer.pop() != i){
+    val bufferContents = inputBuffer.queue()
+    if (bufferContents.size < combination.size) {
+        return false
+    }
+    for (i in combination.indices) {
+        if (bufferContents[bufferContents.size - combination.size + i] != combination[i]) {
             return false
         }
     }
