@@ -1,4 +1,5 @@
 [versions]
+accompanistForegroundservice = "0.28.0"
 agp = "8.7.2"
 kotlin = "2.0.0"
 coreKtx = "1.15.0"
@@ -13,6 +14,7 @@ generativeai = "0.2.2"
 googleAndroidLibrariesMapsplatformSecretsGradlePlugin = "2.0.1"
 
 [libraries]
+accompanist-foregroundservice = { module = "com.google.accompanist:accompanist-foregroundservice", version.ref = "accompanistForegroundservice" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

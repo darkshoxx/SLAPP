@@ -1,5 +1,6 @@
 package com.example.slapp
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -24,12 +25,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.mutableStateOf
@@ -50,8 +55,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import kotlin.io.path.name
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,11 +80,135 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun ShowCombinationButton(context: Context, message: String) {
+    Button(onClick = {
+        // pop up Toast showing the combination
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    },
+        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
+    ) { Text(text = "Show combination") }
+}
 
+@Composable
+fun WarningText(text: String, color: Color, modifier: Modifier){
+    var textSize by remember { mutableStateOf(50.sp) }
+    val configuration = LocalConfiguration.current
+    Text(
+        text = text,
+        color = color,
+        style = MaterialTheme.typography.titleLarge.copy(fontSize = textSize),
+        modifier = modifier
+            .fillMaxWidth(1f)
+            .wrapContentSize(Alignment.Center),
+        onTextLayout = { textLayoutResult: TextLayoutResult ->
+                    val textWidth = textLayoutResult.size.width
+                    val targetWidth = configuration.screenWidthDp.dp*2
+                    if (textWidth > targetWidth.value) {
+                        textSize *= (targetWidth.value / textWidth)
+                    }
+                }
+            )
+}
+
+@Composable
+fun UnlockScreen(){
+    val viewModel: StateViewModel = viewModel()
+    // create local context
+    val context = LocalContext.current
+    Box(modifier = Modifier.fillMaxSize()){
+        GestureScreen()
+        // wrap Row into Colum to insert text at bottom of screen
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+//            .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                ShowCombinationButton(
+                    context,
+                    "The combination is ${viewModel.combination.toList()}"
+                )
+                Button(
+                    onClick = {
+
+                        viewModel.clearBuffer()
+                        viewModel.toggleBufferActive()
+                        val logbuffer = viewModel.bufferActive
+                        Log.i("Buffer", "Buffer is now $logbuffer")
+
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
+                    )
+                ) { Text(text = if (viewModel.bufferActive) "UNLOCKING" else "Unlock") }
+            }
+            WarningText(
+                color = Color.Green,
+                text = "Unlock to release",
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
+
+
+
+@Composable
+fun LockScreen(){
+    val viewModel: StateViewModel = viewModel()
+    // create local context
+    val context = LocalContext.current
+    Box(modifier = Modifier.fillMaxSize()){
+        GestureScreen()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+        ) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
+            horizontalArrangement = Arrangement.SpaceAround){
+            // use the show combination button here
+             ShowCombinationButton(context, "The combination is ${viewModel.combination.toList()}")
+            Button(onClick = {
+
+                viewModel.clearBuffer()
+                viewModel.toggleBufferActive()
+                val logbuffer = viewModel.bufferActive
+                Log.i("Buffer", "Buffer is now $logbuffer")
+
+            },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
+                )
+            ) { Text(text = if (viewModel.bufferActive) "LOCKING" else "Enter combination to lock") }
+        }
+            WarningText(
+                color = Color.Red,
+                text = "WARNING! LOCKING",
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+}
 
 @Composable
 fun MainScreen(){
     val viewModel: StateViewModel = viewModel()
+    val context = LocalContext.current
+    var isServiceRunning by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
         Row(modifier = Modifier
@@ -81,28 +216,52 @@ fun MainScreen(){
             .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround){
             Button(onClick = {
-                if (!viewModel.settingCombination.value) {
-                    viewModel.clearCombination()
+                if (!viewModel.bufferActive) {
+                    // Only toggle if buffer is not active
+                    if (!viewModel.settingCombination.value) {
+                        viewModel.clearCombination()
+                    }
+                    viewModel.toggleSettingCombination()
+                    val logsetting = viewModel.settingCombination.value
+                    Log.i("Setting", "Setting is now $logsetting")
                 }
-                viewModel.toggleSettingCombination()
-                val logsetting = viewModel.settingCombination.value
-                Log.i("Setting", "Setting is now $logsetting")
             },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (viewModel.settingCombination.value) Color.Red else Color.Blue
-                )
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (viewModel.settingCombination.value) Color.Red else Color.Blue
+                    )
+
             ) { Text(text = if (viewModel.settingCombination.value) "SETTING" else "Set Combination") }
+            LaunchedEffect(key1 = Unit) { // Execute once when the composable is initialized
+                val sharedPrefs = context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+                isServiceRunning = sharedPrefs.getBoolean("isServiceRunning", false)
+            }
             Button(onClick = {
-                viewModel.clearBuffer()
-                viewModel.toggleBufferActive()
-                val logbuffer = viewModel.bufferActive
-                Log.i("Buffer", "Buffer is now $logbuffer")
+                val intent = Intent(context, MyForegroundService::class.java)
+                if (isServiceRunning) {
+                    context.stopService(intent)
+                } else {
+                    ContextCompat.startForegroundService(context, intent)
+                }
+                // Update isServiceRunning after starting/stopping the service
+                isServiceRunning = !isServiceRunning
+            }) {
+                Text(if (isServiceRunning) "Stop Service" else "Start Service")
+            }
+            Button(onClick = {
+                if (!viewModel.settingCombination.value) {
+                    // Only toggle if buffer is not active
+                    viewModel.clearBuffer()
+                    viewModel.toggleBufferActive()
+                    val logbuffer = viewModel.bufferActive
+                    Log.i("Buffer", "Buffer is now $logbuffer")
+                }
             },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
                 )
                 ) { Text(text = if (viewModel.bufferActive) "TESTING" else "Test Combination") }
         }
+
     }
 }
 
@@ -157,7 +316,10 @@ fun GestureScreen() {
                                 Log.i("Success", "Successful unlock!")
                                 viewModel.clearBuffer()
                                 // Make a toast pup up that says "unlocked"
-                                Toast.makeText(context, "Unlocked!", Toast.LENGTH_SHORT).show()
+                                Toast
+                                    .makeText(context, "Unlocked!", Toast.LENGTH_SHORT)
+                                    .show()
+                                // TODO: Improve Visuals of Toast
                             } else {
                                 Log.i("Failure", "Still Locked!")
                             }
@@ -214,10 +376,36 @@ fun MainScreenPreview() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun UnlockScreenPreview() {
+    SLAPPTheme { // Apply your app's theme
+        UnlockScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LockScreenPreview() {
+    SLAPPTheme { // Apply your app's theme
+        LockScreen()
+    }
+}
+
 class MyForegroundService : Service() {
+    // TODO: Implement your foreground service logic here:
+    //      - ensure that corner icon pops up whenever screen is touched and app is active
+    //      - ensure that touching the corner icon will activate lock screen settings
+    //      - when LOCK icon on lock screen setting is pressed: initate override
+    //      - when combination is entered: deactivate override
+    //      - consult Mike
+    //      - avoid conflicts with OS-based lockscreen
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
+        val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+        val editor = sharedPrefs.edit()
+        editor.putBoolean("isServiceRunning", true).apply()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         // Your background logic here
@@ -226,6 +414,13 @@ class MyForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? {
         return null}
     // ... other service methods ...
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+        val editor = sharedPrefs.edit()
+        editor.putBoolean("isServiceRunning", false).apply()
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -251,7 +446,7 @@ class MyForegroundService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("My Foreground Service")
             .setContentText("Service is running")
-            .setSmallIcon(R.drawable.hex_simple) // Replace with your icon
+            .setSmallIcon(R.drawable.hex_simple_icon) // Replace with your icon
             .setContentIntent(pendingIntent)
             .build()
     }

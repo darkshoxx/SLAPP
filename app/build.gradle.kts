@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.ui:ui-text:1.7.6")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.3.0")
