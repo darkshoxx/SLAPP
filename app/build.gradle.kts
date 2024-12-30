@@ -42,6 +42,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.navigation:navigation-compose:2.5.3")
     implementation("androidx.compose.ui:ui-text:1.7.6")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")

@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,9 +33,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.getValue
 //import androidx.compose.runtime.mutableStateOf
@@ -62,18 +65,77 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
+import androidx.navigation.Navigator
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import kotlin.io.path.name
+
+interface NavigationController {
+    val isMock: Boolean
+}
+
+
+class MockNavController(context: Context, override val isMock: Boolean = true) : NavHostController(context), NavigationController{
+  //do nothing
+}
+
+class RealNavController(val navController: NavHostController) : NavigationController {
+    override val isMock: Boolean = false
+}
+
+
+class NavigationControllerHolder{
+    lateinit var navController: NavigationController
+    companion object {
+        private var instance: NavigationControllerHolder? = null
+        fun getInstance(): NavigationControllerHolder {
+            if (instance == null) {
+                instance = NavigationControllerHolder()
+            }
+            return instance!!
+        }
+    }
+}
+
+@Composable
+fun rememberIsServiceLocked(): MutableState<Boolean> {
+    return remember { mutableStateOf(false) }
+}
+
+@Composable
+fun AppNavigation(navController: NavigationController, isServiceLocked: MutableState<Boolean>) {
+    val realNavController = when (navController) {
+        is RealNavController -> navController.navController
+        is MockNavController -> rememberNavController() // Use a default navController for MockNavController
+        else -> rememberNavController() // Handle other cases if needed
+    }
+
+    NavHost(navController = realNavController, startDestination = "main") {
+        composable("main") { MainScreen(navController) } // Pass the original navController
+        composable("lock") { LockScreen(navController, isServiceLocked) } // Pass the original navController
+        composable("unlock") { UnlockScreen(navController, isServiceLocked) } // Pass the original navController
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val navigationControllerHolder = NavigationControllerHolder()
         setContent {
             SLAPPTheme {
+                val navController = rememberNavController()
+                navigationControllerHolder.navController = RealNavController(navController)
+                val isServiceLocked = rememberIsServiceLocked()
+                AppNavigation(navigationControllerHolder.navController, isServiceLocked)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                   MainScreen()
+                   MainScreen(navigationControllerHolder.navController)
                 }
             }
         }
@@ -112,9 +174,10 @@ fun WarningText(text: String, color: Color, modifier: Modifier){
 }
 
 @Composable
-fun UnlockScreen(){
+fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableState<Boolean>){
     val viewModel: StateViewModel = viewModel()
     // create local context
+//    var isServiceLocked by remember { mutableStateOf(false) }
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
@@ -137,7 +200,27 @@ fun UnlockScreen(){
                 )
                 Button(
                     onClick = {
+                        if(!navController.isMock)(navController as RealNavController).navController.navigate("main")
+                              },
+                    enabled = !navController.isMock){
 
+                    Text("Go to Main Screen")
+                }
+                Switch(
+                    checked = isServiceLocked.value,
+                    onCheckedChange = { isChecked ->
+                        isServiceLocked.value = isChecked
+                        // Update the shared preference and the service's isLocked property
+                        context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean("isLocked", isChecked)
+                            .apply()
+                        // Assuming you have a way to communicate with the service (e.g., using a bound service or broadcast receiver)
+                        // Update the service's isLocked property here
+                    }
+                )
+                Button(
+                    onClick = {
                         viewModel.clearBuffer()
                         viewModel.toggleBufferActive()
                         val logbuffer = viewModel.bufferActive
@@ -160,13 +243,13 @@ fun UnlockScreen(){
     }
 }
 
-
-
 @Composable
-fun LockScreen(){
+fun LockScreen(navController: NavigationController, isServiceLocked: MutableState<Boolean>){
     val viewModel: StateViewModel = viewModel()
     // create local context
     val context = LocalContext.current
+
+//    var isServiceLocked by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
         Column(
@@ -180,6 +263,25 @@ fun LockScreen(){
             horizontalArrangement = Arrangement.SpaceAround){
             // use the show combination button here
              ShowCombinationButton(context, "The combination is ${viewModel.combination.toList()}")
+            Button(
+                onClick = {if(!navController.isMock)(navController as RealNavController).navController.navigate("unlock")},
+                enabled = !navController.isMock)
+            {
+                Text("Go to Unlock Screen")
+            }
+            Switch(
+                checked = isServiceLocked.value,
+                onCheckedChange = { isChecked ->
+                    isServiceLocked.value = isChecked
+                    // Update the shared preference and the service's isLocked property
+                    context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("isLocked", isChecked)
+                        .apply()
+                    // Assuming you have a way to communicate with the service (e.g., using a bound service or broadcast receiver)
+                    // Update the service's isLocked property here
+                }
+            )
             Button(onClick = {
 
                 viewModel.clearBuffer()
@@ -205,7 +307,7 @@ fun LockScreen(){
 }
 
 @Composable
-fun MainScreen(){
+fun MainScreen(navController: NavigationController){
     val viewModel: StateViewModel = viewModel()
     val context = LocalContext.current
     var isServiceRunning by remember { mutableStateOf(false) }
@@ -234,6 +336,10 @@ fun MainScreen(){
             LaunchedEffect(key1 = Unit) { // Execute once when the composable is initialized
                 val sharedPrefs = context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
                 isServiceRunning = sharedPrefs.getBoolean("isServiceRunning", false)
+            }
+            Button(onClick = { if(!navController.isMock)(navController as RealNavController).navController.navigate("lock") },
+                enabled = !navController.isMock) {
+                Text("Go to Lock Screen")
             }
             Button(onClick = {
                 val intent = Intent(context, MyForegroundService::class.java)
@@ -360,6 +466,21 @@ fun CenterHexImage() {
     )
 }
 
+@Composable
+fun MainActivityContent() {
+    val context = LocalContext.current
+    var isServiceLocked = remember { mutableStateOf(
+        context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+            .getBoolean("isLocked", false)
+    ) }
+
+    SLAPPTheme {
+        val navController = NavigationControllerHolder.getInstance().navController //
+        AppNavigation(navController, isServiceLocked)
+    }
+}
+
+
 @Preview(showBackground = true)
 @Composable
 fun GestureScreenPreview() {
@@ -370,41 +491,71 @@ fun GestureScreenPreview() {
 
 @Preview(showBackground = true)
 @Composable
+fun MainActivityContentPreview() {
+    val context: Context = LocalContext.current
+    NavigationControllerHolder.getInstance().navController = RealNavController(rememberNavController())
+    MainActivityContent()
+}
+
+@Preview(showBackground = true)
+@Composable
 fun MainScreenPreview() {
+    val context = LocalContext.current
     SLAPPTheme { // Apply your app's theme
-        MainScreen()
+        MainScreen(MockNavController(context))
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun UnlockScreenPreview() {
+    val context = LocalContext.current
+    val isServiceLocked = remember { mutableStateOf(false) }
     SLAPPTheme { // Apply your app's theme
-        UnlockScreen()
+        UnlockScreen(MockNavController(context), isServiceLocked)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LockScreenPreview() {
+    val context = LocalContext.current
+    val isServiceLocked = remember { mutableStateOf(false) }
     SLAPPTheme { // Apply your app's theme
-        LockScreen()
+        LockScreen(MockNavController(context), isServiceLocked)
     }
 }
 
 class MyForegroundService : Service() {
+    private val sharedPrefs by lazy { getSharedPreferences("my_prefs", Context.MODE_PRIVATE) }
+    var isLocked: Boolean
+        get() = sharedPrefs.getBoolean("isLocked", false) // Default to unlocked mode
+        set(value) {
+            sharedPrefs.edit().putBoolean("isLocked", value).apply()
+        }
     // TODO: Implement your foreground service logic here:
     //      - ensure that corner icon pops up whenever screen is touched and app is active
     //      - ensure that touching the corner icon will activate lock screen settings
-    //      - when LOCK icon on lock screen setting is pressed: initate override
+    //      - when LOCK icon on lock screen setting is pressed: initiate override
     //      - when combination is entered: deactivate override
     //      - consult Mike
     //      - avoid conflicts with OS-based lockscreen
-
+    //      - timeout override as security measure
+    //      - sound override as security measure
+    //      - volume buttons override list by Gemini
+    //      - list generated by Gemini:
+    //              1. create mechanism to toggle between locked and unlocked
+    //              2. Implement way to capture screen tap events
+    //              3. In accessibility service, check current mode
+    //              4. if unlocked business logic
+    //              5. if locked business logic
+    //              6. Update UI to reflect mode
+    //              7. Continue Testing
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
         val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
         val editor = sharedPrefs.edit()
+
         editor.putBoolean("isServiceRunning", true).apply()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
