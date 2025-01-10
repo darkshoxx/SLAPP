@@ -52,6 +52,7 @@ implementation(libs.androidx.lifecycle.service)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     implementation("androidx.navigation:navigation-compose:2.5.3")
     implementation("androidx.compose.ui:ui-text:1.7.6")
+    implementation("com.github.wendykierp:JTransforms:3.1")
     androidTestImplementation("org.mockito:mockito-core:4.8.0" )// Or a newer version
     // For Kotlin users, add this as well:
     androidTestImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")

@@ -16,10 +16,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ForegroundService : LifecycleService() {
+    private lateinit var soundUnlockManager: SoundUnlockManager
+    private val serviceScope = CoroutineScope(Dispatchers.Main)
+
     private val sharedPrefs by lazy { getSharedPreferences("my_prefs", Context.MODE_PRIVATE) }
     private val sharedPrefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPrefs, key ->
         if (key == "isLocked") {
@@ -41,7 +46,7 @@ class ForegroundService : LifecycleService() {
             sharedPrefs.edit().putLong("timestampWhenLocked", value).apply()
         }
 
-    private var varTimeout = 5 // 5 seconds when testing, 60 by debug defualt, 3600 by production defualt
+    private var varTimeout = AppConfig.TIMEOUT_SECONDS // 15 seconds when emulating, 1 in testing, 3600 by production default
 
     private fun startTimeoutCheck() {
         var isLocked: Boolean
@@ -80,17 +85,22 @@ class ForegroundService : LifecycleService() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         // Your background logic here
+        serviceScope.launch {
+            soundUnlockManager.startListening()
+        }
         return START_STICKY
     }
 
     override fun onCreate() {
         super.onCreate()
+        soundUnlockManager = SoundUnlockManager(this)
         sharedPrefs.registerOnSharedPreferenceChangeListener(sharedPrefsListener)
         startTimeoutCheck()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        soundUnlockManager.stopListening()
         val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
         val editor = sharedPrefs.edit()
         editor.putBoolean("isServiceRunning", false).apply()

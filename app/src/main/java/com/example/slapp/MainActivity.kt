@@ -2,10 +2,15 @@ package com.example.slapp
 
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,23 +36,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 
 // TODO: Implement your foreground service logic here:
+//      - current bugs:
+//          - combinations and interactions of buttons in main/lock/unlockscreen erroneous.
+//          - combination setting does not persist between mainscreen and lock/unlock screen.
+//          - Stop Service crashes App instead of stopping service.
+//          - Sound override doesn't actually unlock the bool.
+//          - Sound override needs to be stable for at least 5 seconds.
 //      - ensure that corner icon pops up whenever screen is touched and app is active
 //      - ensure that touching the corner icon will activate lock screen settings
 //      - when LOCK icon on lock screen setting is pressed: initiate override
 //      - when combination is entered: deactivate override
 //      - consult Mike
 //      - avoid conflicts with OS-based lockscreen
-//      - timeout override list by Gemini
-//              1. Start timer when isLocked is set to true
-//              2. When timer runs out, set isLocked to false and update SharedPreferences
-//              3. in UnlockScreen, check state of isLocked in SharedPreferences and cancel unlocking (not sure why)
-//      - sound override list by Gemini
-//              1. Create AudioRecord to access microphone
-//              2. Analyse frequency in AudioRecord
-//              3. Unlock if override frequency is detected
 //      - volume buttons override list by Gemini
 //              1. Create BroadcastReceiver that listens for button presses
 //              2. Check booleans within BroadcastReceiver
@@ -62,6 +67,9 @@ import androidx.navigation.compose.rememberNavController
 //              6. Update UI to reflect mode
 //              7. Continue Testing
 
+// DONE:
+// - Timing override
+// - Sound override
 
 @Composable
 fun rememberIsServiceLocked(): MutableState<Boolean> {
@@ -70,20 +78,93 @@ fun rememberIsServiceLocked(): MutableState<Boolean> {
 
 
 class MainActivity : ComponentActivity() {
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var sharedPreferences: SharedPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val navigationControllerHolder = NavigationControllerHolder()
+        sharedPreferences = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
+        val mode = intent.getStringExtra("mode") ?: "production"
+
+        initializeAppConfig(mode)
+
+
+
+        requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                setupApp()
+            } else {
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+        requestAudioPermission()
+    }
+
+    private fun initializeAppConfig(mode:String){
+        val timeoutSeconds: Int
+        val frequencyTolerance: Float
+
+        when (mode) {
+            "production" -> {
+                timeoutSeconds = 3600
+                frequencyTolerance = 0.1f
+            }
+            "emulator" -> {
+                timeoutSeconds = 15
+                frequencyTolerance = 10f
+            }
+            "test" -> {
+                timeoutSeconds = 1
+                frequencyTolerance = 0.0001f
+            }
+            else -> {
+                timeoutSeconds = 15
+                frequencyTolerance = 10f
+                Log.w("MainActivity", "Unknown mode: $mode. Using emulator settings.")
+            }
+        }
+        AppConfig.setConfig(timeoutSeconds, frequencyTolerance)
+        sharedPreferences.edit()
+            .putInt("timeoutSeconds", timeoutSeconds)
+            .putFloat("frequencyTolerance", frequencyTolerance)
+            .putString("mode", mode)
+            .apply()
+    }
+
+
+    private fun requestAudioPermission(){
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                setupApp()
+            }
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                this,
+                android.Manifest.permission.RECORD_AUDIO) -> {
+                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                requestPermissionLauncher.launch(
+                    android.Manifest.permission.RECORD_AUDIO)
+                }
+        }
+    }
+
+
+    private fun setupApp() {
         setContent {
             SLAPPTheme {
                 val navController = rememberNavController()
-                navigationControllerHolder.navController = RealNavController(navController)
+                val realNavController = RealNavController(navController)
                 val isServiceLocked = rememberIsServiceLocked()
-                AppNavigation(navigationControllerHolder.navController, isServiceLocked)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                   MainScreen(navigationControllerHolder.navController)
+                    AppNavigation(realNavController, isServiceLocked)
                 }
             }
         }
