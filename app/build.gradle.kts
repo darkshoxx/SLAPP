@@ -41,14 +41,26 @@ android {
     }
 }
 
+
+
 dependencies {
+implementation(libs.androidx.lifecycle.service)
+    //    androidTestImplementation("org.hamcrest:hamcrest:2.2")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
     implementation("androidx.navigation:navigation-compose:2.5.3")
     implementation("androidx.compose.ui:ui-text:1.7.6")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.hamcrest:hamcrest:2.2")
+    androidTestImplementation("org.mockito:mockito-core:4.8.0" )// Or a newer version
+    // For Kotlin users, add this as well:
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
+    androidTestImplementation("org.mockito:mockito-android:4.8.0")
+//    testImplementation("junit:junit:4.13.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.3.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core-ktx:1.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -64,6 +76,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(project(":app"))
+    androidTestImplementation(project(":app"))
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

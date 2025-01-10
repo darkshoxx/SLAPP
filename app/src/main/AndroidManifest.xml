@@ -17,7 +17,7 @@
         android:theme="@style/Theme.SLAPP"
         tools:targetApi="31">
         <service
-            android:name=".MyForegroundService"
+            android:name=".ForegroundService"
             android:foregroundServiceType="dataSync" />
         <activity
             android:name=".MainActivity"
