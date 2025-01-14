@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -44,7 +45,15 @@ class ForegroundService : LifecycleService() {
             }
         }
 
-}
+    }
+
+    inner class LocalBinder : Binder() {
+        fun getService(): ForegroundService = this@ForegroundService
+    }
+    override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
+        return LocalBinder()
+    }
 
     var timestampWhenLocked: Long
         get() = sharedPrefs.getLong("timestampWhenLocked", 0)
@@ -84,10 +93,6 @@ class ForegroundService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         createNotificationChannel()
-        val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
-        val editor = sharedPrefs.edit()
-
-        editor.putBoolean("isServiceRunning", true).apply()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         // Your background logic here
@@ -105,9 +110,6 @@ class ForegroundService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
         soundUnlockManager.stopListening()
-        val sharedPrefs = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
-        val editor = sharedPrefs.edit()
-        editor.putBoolean("isServiceRunning", false).apply()
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(sharedPrefsListener)
     }
 

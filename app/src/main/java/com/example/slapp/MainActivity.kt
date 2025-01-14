@@ -1,10 +1,14 @@
 package com.example.slapp
 
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -38,6 +42,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.rememberNavController
 
 // TODO: Implement your foreground service logic here:
@@ -75,16 +80,35 @@ fun rememberIsServiceLocked(): MutableState<Boolean> {
 
 
 class MainActivity : ComponentActivity() {
+    private lateinit var viewModel: StateViewModel
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
     private lateinit var sharedPreferences: SharedPreferences
+    private var isServiceBound = false
+    private var foregroundService: ForegroundService? = null
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as ForegroundService.LocalBinder
+            foregroundService = binder.getService()
+            isServiceBound = true
+            viewModel.setServiceBound(true)
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isServiceBound = false
+            foregroundService = null
+
+            viewModel.setServiceBound(false)
+            // Update UI or other logic here if needed
+            // You now know the service is not bound
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(this).get(StateViewModel::class.java)
         sharedPreferences = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
         val mode = intent.getStringExtra("mode") ?: "production"
 
         initializeAppConfig(mode)
-
-
 
         requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -171,7 +195,33 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+
+
+    override fun onStart() {
+        super.onStart()
+        val intent = Intent(this, ForegroundService::class.java)
+        bindService(intent, connection, 0)
+        // ... other code ...
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (isServiceBound) {
+            unbindService(connection)
+            isServiceBound = false
+        }
+
+    }
+
+    fun startForegroundService(){
+        viewModel.startService(this)
+    }
+    fun stopForegroundService(){
+        viewModel.stopService(this)
+    }
 }
+
 
 @Composable
 fun ShowCombinationButton(context: Context, message: String) {

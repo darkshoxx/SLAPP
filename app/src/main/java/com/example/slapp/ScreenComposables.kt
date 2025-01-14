@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.result.launch
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -80,10 +81,9 @@ fun LockSwitch(isServiceLocked: MutableState<Boolean>){
 
 @Composable
 fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableState<Boolean>){
-    val viewModel: StateViewModel = viewModel()
     // create local context
-//    var isServiceLocked by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
         // wrap Row into Colum to insert text at bottom of screen
@@ -138,8 +138,8 @@ fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableSt
 
 @Composable
 fun LockScreen(navController: NavigationController, isServiceLocked: MutableState<Boolean>){
-    val viewModel: StateViewModel = viewModel()
     val context = LocalContext.current
+    val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -189,9 +189,9 @@ fun LockScreen(navController: NavigationController, isServiceLocked: MutableStat
 
 @Composable
 fun MainScreen(navController: NavigationController){
-    val viewModel: StateViewModel = viewModel()
     val context = LocalContext.current
-    var isServiceRunning by remember { mutableStateOf(false) }
+    val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
+    val isServiceBound by viewModel.isServiceBound.collectAsState()
     Box(modifier = Modifier.fillMaxSize()){
         GestureScreen()
         Row(modifier = Modifier
@@ -214,26 +214,23 @@ fun MainScreen(navController: NavigationController){
                 )
 
             ) { Text(text = if (viewModel.settingCombination.value) "SETTING" else "Set Combination") }
-            LaunchedEffect(key1 = Unit) { // Execute once when the composable is initialized
-                val sharedPrefs = context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
-                isServiceRunning = sharedPrefs.getBoolean("isServiceRunning", false)
-            }
             Button(onClick = { if(!navController.isMock)(navController as RealNavController).navController.navigate("lock") },
                 enabled = !navController.isMock,
             modifier = Modifier.testTag("lockButton")) {
                 Text("Go to Lock Screen")
             }
             Button(onClick = {
-                val intent = Intent(context, ForegroundService::class.java)
-                if (isServiceRunning) {
-                    context.stopService(intent)
+                if (isServiceBound) {
+                    viewModel.stopService(context)
+                    (context as MainActivity).stopForegroundService()
                 } else {
-                    ContextCompat.startForegroundService(context, intent)
+                    viewModel.startService(context)
+                    (context as MainActivity).startForegroundService()
                 }
-                // Update isServiceRunning after starting/stopping the service
-                isServiceRunning = !isServiceRunning
+
             }) {
-                Text(if (isServiceRunning) "Stop Service" else "Start Service")
+                Log.i("Button", "SHOXX Service currently running: $isServiceBound")
+                Text(if (isServiceBound) "Stop Service" else "Start Service")
             }
             Button(onClick = {
                 if (!viewModel.settingCombination.value) {
@@ -270,9 +267,9 @@ fun GestureScreen() {
     val centerY = screenHeight / 2
     var region = 0
     // combo related variables
-    val viewModel: StateViewModel = viewModel()
 
     val context = LocalContext.current
+    val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
 
     viewModel.addToCombination(1)
