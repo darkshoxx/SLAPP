@@ -35,6 +35,12 @@ class ForegroundService : LifecycleService() {
                 .show()
             if (isLocked) {
                 timestampWhenLocked = System.currentTimeMillis() / 1000
+                serviceScope.launch {
+                    soundUnlockManager.startListening()
+                }
+            } else {
+                soundUnlockManager.stopListening()
+
             }
         }
 
@@ -85,9 +91,7 @@ class ForegroundService : LifecycleService() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         // Your background logic here
-        serviceScope.launch {
-            soundUnlockManager.startListening()
-        }
+
         return START_STICKY
     }
 

@@ -10,8 +10,10 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jtransforms.fft.DoubleFFT_1D
+import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -23,18 +25,22 @@ class SoundUnlockManager(private val context: Context){
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
     private var audioRecord: AudioRecord? = null
     private var isListening = false
+    private var isRecording = false
     private val targetFrequency = 440.0f
     private val frequencyTolerance = AppConfig.FREQUENCY_TOLERANCE
     private var listeningJob: Job? = null
     suspend fun startListening(){
+        Log.i("SoundUnlockManager", "startListening called")
         if (isListening) return
+        if (!sharedPrefs.getBoolean("isLocked", false)) return
         isListening = true
         listeningJob = CoroutineScope(Dispatchers.IO).launch {
             startAudioRecording()
         }
     }
-
+    @Synchronized
     fun stopListening(){
+        if (!isListening) return
         isListening = false
         listeningJob?.cancel()
         listeningJob = null
@@ -44,6 +50,7 @@ class SoundUnlockManager(private val context: Context){
 
 
     private suspend fun startAudioRecording(){
+        isRecording = true
         if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             Log.e("SoundUnlockManager", "RECORD_AUDIO permission not granted")
             return
@@ -63,29 +70,44 @@ class SoundUnlockManager(private val context: Context){
             audioRecord?.startRecording()
 
             val buffer = ShortArray(bufferSize)
-            while (isListening){
+            var consecutiveTargetFrequencyCount = 0
+            val targetFrequencyThreshold = (AppConfig.FREQUENCY_HELD*sampleRate/bufferSize).toInt()
+
+            while (isListening && coroutineContext.isActive) {
                 val bytesRead = audioRecord?.read(buffer, 0, bufferSize) ?: 0
-                if (bytesRead > 0){
+                if (bytesRead > 0) {
                     val frequency = calculateDominantFrequency(buffer)
                     Log.i("SoundUnlockManager", "Dominant Frequency: $frequency Hz")
-                    if (isTargetFrequencyDetected(frequency)){
-                        Log.i("SoundUnlockManager", "Target frequency detected!")
-                        unlock()
-                        stopListening()
+                    if (isTargetFrequencyDetected(frequency)) {
+                        consecutiveTargetFrequencyCount++
+                        Log.i("SoundUnlockManager", "Consecutive target frequency count $consecutiveTargetFrequencyCount of $targetFrequencyThreshold")
+                        if (consecutiveTargetFrequencyCount >= targetFrequencyThreshold) {
+                            Log.i("SoundUnlockManager", "Target frequency held for ${AppConfig.FREQUENCY_HELD} seconds!")
+                            unlock()
+                            stopListening()
+                        }
+                    } else {
+                        consecutiveTargetFrequencyCount = 0
+                        Log.i("SoundUnlockManager", "Consecutive target frequency count reset:0 of $targetFrequencyThreshold")
                     }
                 }
-
-
             }
         } catch (e: Exception){
             Log.e("SoundUnlockManager", "Error creating AudioRecord", e)
         } finally {
             stopAudioRecording()
+            isRecording = false
         }
     }
 
     private fun stopAudioRecording(){
-        audioRecord?.stop()
+        if (audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+            try {
+                audioRecord?.stop()
+            } catch (e: IllegalStateException) {
+                Log.e("SoundUnlockManager", "Error stopping AudioRecord", e)
+            }
+        }
         audioRecord?.release()
         audioRecord = null
     }

@@ -44,9 +44,6 @@ import androidx.navigation.compose.rememberNavController
 //      - current bugs:
 //          - combinations and interactions of buttons in main/lock/unlockscreen erroneous.
 //          - combination setting does not persist between mainscreen and lock/unlock screen.
-//          - Stop Service crashes App instead of stopping service.
-//          - Sound override doesn't actually unlock the bool.
-//          - Sound override needs to be stable for at least 5 seconds.
 //      - ensure that corner icon pops up whenever screen is touched and app is active
 //      - ensure that touching the corner icon will activate lock screen settings
 //      - when LOCK icon on lock screen setting is pressed: initiate override
@@ -104,27 +101,32 @@ class MainActivity : ComponentActivity() {
     private fun initializeAppConfig(mode:String){
         val timeoutSeconds: Int
         val frequencyTolerance: Float
+        val frequencyHeld: Int
 
         when (mode) {
             "production" -> {
                 timeoutSeconds = 3600
                 frequencyTolerance = 0.1f
+                frequencyHeld = 10
             }
             "emulator" -> {
                 timeoutSeconds = 15
                 frequencyTolerance = 10f
+                frequencyHeld = 5
             }
             "test" -> {
                 timeoutSeconds = 1
                 frequencyTolerance = 0.0001f
+                frequencyHeld = 1
             }
             else -> {
                 timeoutSeconds = 15
                 frequencyTolerance = 10f
+                frequencyHeld = 5
                 Log.w("MainActivity", "Unknown mode: $mode. Using emulator settings.")
             }
         }
-        AppConfig.setConfig(timeoutSeconds, frequencyTolerance)
+        AppConfig.setConfig(timeoutSeconds, frequencyTolerance, frequencyHeld)
         sharedPreferences.edit()
             .putInt("timeoutSeconds", timeoutSeconds)
             .putFloat("frequencyTolerance", frequencyTolerance)
