@@ -1,7 +1,10 @@
 package com.example.slapp
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
@@ -20,6 +23,7 @@ class StateViewModel : ViewModel() {
     private val _bufferActive = mutableStateOf(false)
     private val _settingCombination = mutableStateOf(false)
     private val _isServiceBound = MutableStateFlow(false)
+    private var serviceConnection: ServiceConnection? = null
     val settingCombination: State<Boolean> get() = _settingCombination
     val combination: List<Int> get() = _combination
     val inputBuffer: FILOBuffer get() = _inputBuffer.value
@@ -57,10 +61,37 @@ class StateViewModel : ViewModel() {
         Log.i("Service", "SHOXX service bound: ${_isServiceBound.value}")
         val intent = Intent(context, ForegroundService::class.java)
         ContextCompat.startForegroundService(context, intent)
+
+        if (serviceConnection == null){
+            serviceConnection = object : ServiceConnection {
+                override fun onServiceConnected(className: ComponentName, service: IBinder) {
+                    _isServiceBound.value = true
+                    Log.i("Service", "SHOXX service connected! bound: ${_isServiceBound.value}")
+                }
+                override fun onServiceDisconnected(arg0: ComponentName) {
+                    _isServiceBound.value = false
+                    Log.i("Service", "SHOXX service disconnected! bound: ${_isServiceBound.value}")
+                }
+            }
+        }
+    context.bindService(intent, serviceConnection!!, Context.BIND_AUTO_CREATE)
     }
-    fun stopService(context: Context){
+    fun stopService(context: Context) {
+        Log.i("Service", "SHOXX Stopping Service")
         val intent = Intent(context, ForegroundService::class.java)
-        context.stopService(intent)
+        if (_isServiceBound.value && serviceConnection != null) {
+            context.unbindService(serviceConnection!!)
+            _isServiceBound.value = false
+            Log.i("Service", "SHOXX3 service bound: ${_isServiceBound.value}")
+
+
+
+        }
+        if (context.stopService(intent)){
+            Log.i("Service", "SHOXX2 service stopped")
+        } else {
+            Log.i("Service", "SHOXX2 service not stopped")
+        }
     }
     fun setServiceBound(isBound: Boolean) {
         _isServiceBound.value = isBound

@@ -200,26 +200,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        val intent = Intent(this, ForegroundService::class.java)
-        bindService(intent, connection, 0)
-        // ... other code ...
     }
 
     override fun onStop() {
         super.onStop()
-        if (isServiceBound) {
-            unbindService(connection)
-            isServiceBound = false
+        if (viewModel.isServiceBound.value){
+            viewModel.stopService(this)
         }
 
     }
 
-    fun startForegroundService(){
-        viewModel.startService(this)
-    }
-    fun stopForegroundService(){
-        viewModel.stopService(this)
-    }
 }
 
 

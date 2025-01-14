@@ -41,6 +41,7 @@ class ForegroundService : LifecycleService() {
                 }
             } else {
                 soundUnlockManager.stopListening()
+                timestampWhenLocked = 0
 
             }
         }
@@ -83,7 +84,6 @@ class ForegroundService : LifecycleService() {
                         timestampWhenLocked = 0
                     }
                 }
-//                Log.i("Timeout", "No timeout. Advancing")
                 delay(1000)
             }
 
@@ -91,14 +91,16 @@ class ForegroundService : LifecycleService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.i("Service", "SHOXX7 onStartCommand")
         super.onStartCommand(intent, flags, startId)
         createNotificationChannel()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         // Your background logic here
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
+
 
     override fun onCreate() {
         super.onCreate()
@@ -108,9 +110,11 @@ class ForegroundService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        Log.i("Service", "SHOXX onDestroy")
         super.onDestroy()
         soundUnlockManager.stopListening()
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(sharedPrefsListener)
+        stopForeground(true)
     }
 
     private fun createNotificationChannel() {

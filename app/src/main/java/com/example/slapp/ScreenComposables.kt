@@ -220,16 +220,15 @@ fun MainScreen(navController: NavigationController){
                 Text("Go to Lock Screen")
             }
             Button(onClick = {
+                Log.i("Button", "SHOXX after click before changes Service bound: $isServiceBound")
                 if (isServiceBound) {
                     viewModel.stopService(context)
-                    (context as MainActivity).stopForegroundService()
                 } else {
                     viewModel.startService(context)
-                    (context as MainActivity).startForegroundService()
                 }
 
             }) {
-                Log.i("Button", "SHOXX Service currently running: $isServiceBound")
+                Log.i("Button", "SHOXX after changes: $isServiceBound")
                 Text(if (isServiceBound) "Stop Service" else "Start Service")
             }
             Button(onClick = {
