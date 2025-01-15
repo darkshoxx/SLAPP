@@ -85,7 +85,7 @@ fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableSt
     val context = LocalContext.current
     val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
     Box(modifier = Modifier.fillMaxSize()){
-        GestureScreen()
+        GestureScreen(parentName = "UnlockScreen")
         // wrap Row into Colum to insert text at bottom of screen
         Column(
             modifier = Modifier
@@ -123,7 +123,7 @@ fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableSt
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
                     )
-                ) { Text(text = if (viewModel.bufferActive) "UNLOCKING" else "Unlock") }
+                ) { Text(text = if (viewModel.bufferActive) "UNLOCKING" else "Enter combination to Unlock") }
             }
             WarningText(
                 color = Color.Green,
@@ -144,7 +144,7 @@ fun LockScreen(navController: NavigationController, isServiceLocked: MutableStat
     Box(modifier = Modifier
         .fillMaxSize()
         .testTag("lockScreen")){
-        GestureScreen()
+        GestureScreen(parentName = "LockScreen")
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,7 +193,7 @@ fun MainScreen(navController: NavigationController){
     val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
     val isServiceBound by viewModel.isServiceBound.collectAsState()
     Box(modifier = Modifier.fillMaxSize()){
-        GestureScreen()
+        GestureScreen(parentName = "MainScreen")
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp),
@@ -251,7 +251,7 @@ fun MainScreen(navController: NavigationController){
 
 
 @Composable
-fun GestureScreen() {
+fun GestureScreen(parentName: String = "MainScreen") {
     // config variables
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -292,12 +292,22 @@ fun GestureScreen() {
                             // Only attempt unlocking when NOT setting combination
                             val success: Boolean = viewModel.tryUnlock()
                             if (success) {
-                                Log.i("Success", "Successful unlock!")
+                                val lockMessage: String
+                                val lockBoolean: Boolean
+                                if (parentName == "LockScreen") {
+                                    lockMessage = "Successfully LOCKED!"
+                                    lockBoolean = true
+                                }   else {
+                                    lockMessage = "Successfully UNLOCKED!"
+                                    lockBoolean = false
+
+                                }
+                                Log.i("Success", lockMessage)
                                 viewModel.clearBuffer()
                                 context
                                     .getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
                                     .edit()
-                                    .putBoolean("isLocked", false)
+                                    .putBoolean("isLocked", lockBoolean)
                                     .apply()
                                 Log.i("ShaPref", "Shared Preferences updated")
                             } else {

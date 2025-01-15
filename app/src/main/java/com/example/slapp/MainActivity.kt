@@ -47,8 +47,14 @@ import androidx.navigation.compose.rememberNavController
 
 // TODO: Implement your foreground service logic here:
 //      - current bugs:
-//          - combinations and interactions of buttons in main/lock/unlockscreen erroneous.
+//          - combinations and interactions of buttons in main/lock/unlockscreen erroneous:
+//              - in MainScreen, Setting or Testing the combination should disable the other 3 buttons
+//              - When starting the service, the popup should say: Service started, please close or minimize app, navigate to destination app and enter lock-screen via status icon. All buttons other than Stop Service, show Combination and Lock should be disabled
+//              - Enter combination to lock should disbale "Go to next screen" button
+//              - Unlock button should say "Enter combination to unlock"
 //      - ensure that corner icon pops up whenever screen is touched and app is active
+//      - Visual Feedback when a number is chosen
+//      - Show Partial combination on screen
 //      - ensure that touching the corner icon will activate lock screen settings
 //      - when LOCK icon on lock screen setting is pressed: initiate override
 //      - when combination is entered: deactivate override
