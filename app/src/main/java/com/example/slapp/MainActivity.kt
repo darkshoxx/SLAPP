@@ -48,7 +48,6 @@ import androidx.navigation.compose.rememberNavController
 // TODO: Implement your foreground service logic here:
 //      - current bugs:
 //          - combinations and interactions of buttons in main/lock/unlockscreen erroneous.
-//          - combination setting does not persist between mainscreen and lock/unlock screen.
 //      - ensure that corner icon pops up whenever screen is touched and app is active
 //      - ensure that touching the corner icon will activate lock screen settings
 //      - when LOCK icon on lock screen setting is pressed: initiate override
@@ -85,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private var isServiceBound = false
     private var foregroundService: ForegroundService? = null
+
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as ForegroundService.LocalBinder
@@ -105,6 +105,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this).get(StateViewModel::class.java)
+        viewModel.addToCombination(1)
+        viewModel.addToCombination(2)
+        viewModel.addToCombination(3)
+        viewModel.addToCombination(4)
         sharedPreferences = getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
         val mode = intent.getStringExtra("mode") ?: "production"
 

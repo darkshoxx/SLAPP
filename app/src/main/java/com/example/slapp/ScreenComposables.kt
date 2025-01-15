@@ -271,11 +271,6 @@ fun GestureScreen() {
     val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
 
-    viewModel.addToCombination(1)
-    viewModel.addToCombination(2)
-    viewModel.addToCombination(3)
-    viewModel.addToCombination(4)
-
     Surface(
         color = colorResource(R.color.gray),
         modifier = Modifier
