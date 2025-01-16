@@ -10,6 +10,7 @@ import androidx.activity.result.launch
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -123,7 +125,7 @@ fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableSt
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (viewModel.bufferActive) Color.Red else Color.Blue
                     )
-                ) { Text(text = if (viewModel.bufferActive) "UNLOCKING" else "Enter combination to Unlock") }
+                ) { Text(text = if (viewModel.bufferActive) "UNLOCKING" else "Enter combination to unlock") }
             }
             WarningText(
                 color = Color.Green,
@@ -270,6 +272,14 @@ fun GestureScreen(parentName: String = "MainScreen") {
     val context = LocalContext.current
     val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
+    val queue = viewModel.queue.collectAsState()
+    val lastNumber = viewModel.lastNumber.collectAsState()
+//    var showLastNumber by remember { mutableStateOf(false) }
+//    
+//    if (lastNumber.value != null && !showLastNumber) {
+//        showLastNumber = true
+//    }
+
 
     Surface(
         color = colorResource(R.color.gray),
@@ -297,7 +307,7 @@ fun GestureScreen(parentName: String = "MainScreen") {
                                 if (parentName == "LockScreen") {
                                     lockMessage = "Successfully LOCKED!"
                                     lockBoolean = true
-                                }   else {
+                                } else {
                                     lockMessage = "Successfully UNLOCKED!"
                                     lockBoolean = false
 
@@ -331,13 +341,35 @@ fun GestureScreen(parentName: String = "MainScreen") {
                     }
                 )
             }
-    ) {
-        Column (
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            content = {
-                CenterHexImage()
-            }
-        )
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize(),
+                content = {
+                    Box(modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ){
+                        CenterHexImage()
+                        if (lastNumber.value != null) {
+
+                            Text(
+                                text = "Last Number: ${lastNumber.value}",
+                                fontSize = 48.sp,
+                                modifier = Modifier.padding(16.dp).align(Alignment.Center)
+                            )
+
+                        }
+                    }
+                }
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomStart
+        ) {
+            Text(text = "Combo so far: ${queue.value.toString()}", fontSize = 24.sp)
+        }
     }
-}

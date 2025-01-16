@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class StateViewModel : ViewModel() {
     private val _combination = mutableStateListOf<Int>()
@@ -24,6 +25,10 @@ class StateViewModel : ViewModel() {
     private val _settingCombination = mutableStateOf(false)
     private val _isServiceBound = MutableStateFlow(false)
     private var serviceConnection: ServiceConnection? = null
+    private var _queue = MutableStateFlow<List<Int>>(emptyList())
+    private var _lastNumber = MutableStateFlow<Int?>(null)
+    val queue: StateFlow<List<Int>> = _queue.asStateFlow()
+    val lastNumber: StateFlow<Int?> = _lastNumber.asStateFlow()
     val settingCombination: State<Boolean> get() = _settingCombination
     val combination: List<Int> get() = _combination
     val inputBuffer: FILOBuffer get() = _inputBuffer.value
@@ -37,6 +42,8 @@ class StateViewModel : ViewModel() {
     }
     fun pushToBuffer(value: Int) {
         _inputBuffer.value.push(value)
+        _queue.update { _inputBuffer.value.queue()}
+        _lastNumber.update { value }
     }
     fun peekBuffer(): Int? {
         return _inputBuffer.value.peek()
@@ -52,6 +59,8 @@ class StateViewModel : ViewModel() {
     }
     fun clearBuffer() {
         _inputBuffer.value.clear()
+        _queue.update{ _inputBuffer.value.queue()}
+        _lastNumber.update { null }
     }
     fun clearCombination() {
         _combination.clear()
