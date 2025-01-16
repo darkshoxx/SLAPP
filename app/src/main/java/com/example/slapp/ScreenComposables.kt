@@ -7,6 +7,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.launch
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -274,11 +278,15 @@ fun GestureScreen(parentName: String = "MainScreen") {
 
     val queue = viewModel.queue.collectAsState()
     val lastNumber = viewModel.lastNumber.collectAsState()
-//    var showLastNumber by remember { mutableStateOf(false) }
-//    
-//    if (lastNumber.value != null && !showLastNumber) {
-//        showLastNumber = true
-//    }
+    var showLastNumber by remember { mutableStateOf(false) }
+
+    LaunchedEffect(key1 = lastNumber.value) {
+        if (lastNumber.value != null) {
+            showLastNumber = true
+            delay(500) // Show for half a second
+            showLastNumber = false
+        }
+    }
 
 
     Surface(
@@ -341,28 +349,35 @@ fun GestureScreen(parentName: String = "MainScreen") {
                     }
                 )
             }
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize(),
         ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxSize(),
-                content = {
-                    Box(modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ){
-                        CenterHexImage()
+                Box(
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+            AnimatedVisibility(
+                visible = showLastNumber,
+                enter = scaleIn(animationSpec = tween(durationMillis = 500)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 500))
+            ) {
                         if (lastNumber.value != null) {
-
                             Text(
-                                text = "Last Number: ${lastNumber.value}",
-                                fontSize = 48.sp,
-                                modifier = Modifier.padding(16.dp).align(Alignment.Center)
+                                text = "${lastNumber.value}",
+                                fontSize = 184.sp,
                             )
-
                         }
                     }
                 }
-            )
+            CenterHexImage()
+            }
         }
         Box(
             modifier = Modifier
@@ -370,6 +385,7 @@ fun GestureScreen(parentName: String = "MainScreen") {
                 .padding(16.dp),
             contentAlignment = Alignment.BottomStart
         ) {
-            Text(text = "Combo so far: ${queue.value.toString()}", fontSize = 24.sp)
+            Text(text = "Combo so far: ${queue.value}", fontSize = 24.sp)
         }
     }
+}
