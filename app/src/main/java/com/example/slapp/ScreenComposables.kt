@@ -276,6 +276,7 @@ fun GestureScreen(parentName: String = "MainScreen") {
     val context = LocalContext.current
     val viewModel: StateViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
+    val volumeButtonManager = remember { VolumeButtonManager(context, viewModel, parentName) }
     val queue = viewModel.queue.collectAsState()
     val lastNumber = viewModel.lastNumber.collectAsState()
     var showLastNumber by remember { mutableStateOf(false) }
