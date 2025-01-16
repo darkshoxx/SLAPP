@@ -1,6 +1,5 @@
 package com.example.slapp
 
-import androidx.compose.runtime.rememberUpdatedState
 import kotlin.math.atan2
 import kotlin.collections.ArrayDeque
 

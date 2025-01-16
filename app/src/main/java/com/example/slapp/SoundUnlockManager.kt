@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import org.jtransforms.fft.DoubleFFT_1D
 import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
-import kotlin.math.max
 
 class SoundUnlockManager(private val context: Context){
     private val sharedPrefs = context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)

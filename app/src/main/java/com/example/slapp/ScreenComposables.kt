@@ -1,12 +1,9 @@
 package com.example.slapp
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.launch
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -14,7 +11,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +41,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 
@@ -102,7 +96,6 @@ fun UnlockScreen(navController: NavigationController, isServiceLocked: MutableSt
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-//            .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 ShowCombinationButton(
